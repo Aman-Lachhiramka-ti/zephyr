@@ -4,7 +4,7 @@ set(SOC_LINKER_SCRIPT ${ZEPHYR_BASE}/include/zephyr/arch/arm/cortex_m/scripts/li
 
 add_subdirectory(common)
 
-if(CONFIG_SOC_FAMILY_TI_MSPM0)
-  string(TOUPPER ${CONFIG_SOC} SDK_SOC_SELECT)
-  zephyr_compile_definitions(__${SDK_SOC_SELECT}__)
+if(CONFIG_HAS_MSPM0_SDK)
+  string(TOUPPER ${CONFIG_SOC} sdk_soc_select)
+  zephyr_compile_definitions(__${sdk_soc_select}__)
 endif()
