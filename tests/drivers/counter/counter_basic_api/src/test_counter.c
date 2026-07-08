@@ -220,6 +220,9 @@ static const struct device *const devices[] = {
 #ifdef CONFIG_COUNTER_WUT_MAX32
 	DEVS_FOR_DT_COMPAT(adi_max32_wut)
 #endif
+#ifdef CONFIG_COUNTER_MSPM0_TIMER
+	DEVS_FOR_DT_COMPAT(ti_mspm0_timer_counter)
+#endif
 };
 
 static const struct device *const period_devs[] = {
