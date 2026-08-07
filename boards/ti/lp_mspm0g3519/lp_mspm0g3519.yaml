@@ -16,4 +16,5 @@ supported:
   - adc
   - spi
   - vref
+  - rtc
 vendor: ti
