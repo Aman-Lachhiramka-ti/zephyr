@@ -10,4 +10,5 @@ supported:
   - pinctrl
   - uart
   - gpio
+  - counter
 vendor: ti
