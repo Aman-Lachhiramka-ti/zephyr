@@ -52,3 +52,11 @@
 	clock-frequency = <32768>;
 	ti,xtal-startup-delay-us = <640000>;
 };
+
+&timg8_0 {
+	status = "okay";
+
+	counterg8_0: counterg8_0 {
+		status = "okay";
+	};
+};
