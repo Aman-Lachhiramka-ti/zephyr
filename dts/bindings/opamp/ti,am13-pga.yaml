@@ -1,0 +1,138 @@
+# Copyright (c) 2026 Texas Instruments Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Texas Instruments AM13E230x/232x Programmable Gain Amplifier (PGA).
+
+  A precision op-amp with an internal resistor ladder providing software-selectable
+  voltage gain from x1 to x64. Clocked by the system bus; no PWREN/RSTCTL sequence
+  is needed. Factory offset and gain trim is applied by ROM boot code (Device_cal)
+  before main() runs.
+
+  The mux topology (pmux, nmux, mmux), filter resistor, and output routing are
+  static board-level decisions set via devicetree. Only gain is changeable at
+  runtime via opamp_set_gain().
+
+  Supported gains: x1, x2, x4, x8, x16, x32, x64. All other opamp_gain enum
+  values return -ENOTSUP. Inverting vs non-inverting is determined by ti,mmux-input;
+  the GAIN register field magnitude is the same for both topologies.
+
+  After opamp_set_gain(), the PGA requires up to 10 us settling time before the
+  output is accurate. The driver does not wait; callers must insert the delay.
+
+compatible: "ti,am13-pga"
+
+include:
+  - opamp-controller.yaml
+  - pinctrl-device.yaml
+
+properties:
+  reg:
+    required: true
+
+  ti,pmux-input:
+    type: string
+    default: "inp0"
+    enum:
+      - "inp0"
+      - "inp1"
+      - "inp2"
+      - "inp3"
+      - "inp4"
+      - "inp5"
+      - "inp6"
+      - "inp7"
+      - "inp8"
+    description: |
+      Positive input mux selection (MUXSEL.PMUXSEL[3:0]).
+      Selects which PGA_INPx package pin is routed to the non-inverting op-amp input.
+
+  ti,nmux-input:
+    type: string
+    default: "rtop"
+    enum:
+      - "rtop"
+      - "rtap"
+      - "inm0"
+      - "inm1"
+      - "inm2"
+      - "inm3"
+    description: |
+      Negative input mux selection (MUXSEL.NMUXSEL[2:0]).
+      rtop: internal top of feedback resistor ladder (non-inverting mode default).
+      rtap: feedback tap for external capacitor low-pass filter.
+      inm0..inm3: PGA_INMx package pin.
+
+  ti,mmux-input:
+    type: string
+    default: "non-inverting"
+    enum:
+      - "standalone"
+      - "non-inverting"
+      - "inm0"
+      - "inm1"
+      - "inm2"
+      - "inm3"
+      - "neg-shared-a"
+      - "neg-shared-b"
+    description: |
+      M-mux selection (MUXSEL.MMUXSEL[2:0]). Controls the bottom node of the
+      internal feedback resistor ladder (Ria bottom).
+      standalone: naked op-amp / G=1, no internal gain (MMUXSEL=0).
+      non-inverting: feedback to VSSA, non-inverting gain x1..x64 (MMUXSEL=1).
+      inm0..inm3: inverting gain via local PGA_INMx pin (MMUXSEL=2..5).
+      neg-shared-a/b: inverting gain via global PGA_NEG_SHARED pin shared across
+        all three PGA instances (MMUXSEL=6,7). Saves two pins in multi-PGA designs.
+
+  ti,filter-resistor-ohms:
+    type: int
+    default: 0
+    enum:
+      - 0
+      - 50
+      - 100
+      - 200
+      - 400
+      - 800
+    description: |
+      On-chip series filter resistor at PGA_OUT pin (PGACTL.FILT_RES_SEL).
+      0 disables the filter path. Connect an external capacitor to PGA_OUT for
+      an RC low-pass filter. Minimum values per gain setting (from TRM Table 23-6):
+        G=1..4: 50 ohm, G=8: 100 ohm, G=16: 200 ohm, G=32: 400 ohm, G=64: 800 ohm.
+
+  ti,output-to-pin:
+    type: boolean
+    description: |
+      Route filtered PGA output to the PGA_OUT package pin (PGACTL.PGA_OUTENABLE).
+      PGA_OUT_INT (the unfiltered internal signal to ADC/CMPSS) is always active
+      when the PGA is enabled regardless of this property.
+
+  ti,internal-gain-to-pin:
+    type: boolean
+    description: |
+      Route the internal gain tap (RTAP node) to a package pin
+      (PGACTL.PGA_OUTEN_INTGAIN=0). Note: the hardware bit is active-low;
+      this DT property is active-high for clarity — the driver inverts it.
+
+  ti,chop-mode:
+    type: string
+    default: "disabled"
+    enum:
+      - "disabled"
+      - "adc-soc"
+      - "sw-extctrl"
+    description: |
+      Chopping mode (MUXSEL.PGA_CHOP[1:0]).
+      disabled: no chopping (default).
+      adc-soc: ADC SOC signal automatically toggles the chop signal after each
+        sample. Use when PGA_OUT_INT feeds an ADC sequencer
+        (PGA0->ADC0_IN31, PGA1->ADC1_IN31, PGA2->ADC2_IN31).
+      sw-extctrl: software toggles PGACTL.CHOP_EXTCTRL manually. Use when no
+        ADC is involved or for custom timing.
+
+  ti,feedback-on-pin:
+    type: boolean
+    description: |
+      Connect PGA_INM0 and the inverting input together (MUXSEL.PGA_FBONPIN=1).
+      Used for single-pole low-pass filtering via an external capacitor across
+      the feedback loop (see TRM Section 23.5.2).
