@@ -19,3 +19,7 @@
 		zephyr,crc = &crc;
 	};
 };
+
+&pga0 {
+	status = "okay";
+};
