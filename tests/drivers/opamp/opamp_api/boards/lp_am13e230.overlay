@@ -1,0 +1,24 @@
+/*
+ * Copyright (c) 2026 Texas Instruments Incorporated
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/ {
+	zephyr,user {
+		opamp = <&pga0>;
+	};
+};
+
+&pga0 {
+	ti,pmux-input = "inp0";
+	ti,nmux-input = "rtop";
+	ti,mmux-input = "non-inverting";
+	programmable-gain = "OPAMP_GAIN_1",
+			    "OPAMP_GAIN_2",
+			    "OPAMP_GAIN_4",
+			    "OPAMP_GAIN_8",
+			    "OPAMP_GAIN_16",
+			    "OPAMP_GAIN_32",
+			    "OPAMP_GAIN_64";
+	status = "okay";
+};
